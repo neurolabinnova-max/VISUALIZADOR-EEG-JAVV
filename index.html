@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VISUALIZADOR DE EEG</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- PapaParse CSV Parser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  
+  <!-- SheetJS (XLSX) para exportación a Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- JSZip para compresión y descarga de CSVs divididos -->
+  <script src="jszip.min.js"></script>
+
+  <!-- jStat para distribuciones estadísticas (F, Normal, Student) -->
+  <script src="jstat.min.js"></script>
+  <script>
+    if (typeof jStat === 'undefined') {
+      const s = document.createElement('script');
+      s.src = "https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js";
+      document.head.appendChild(s);
+    }
+  </script>
+  
+  <!-- Plotly.js para gráficos científicos e interactivos -->
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="style.css?v=2.6">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
+
+  <!-- Header Superior Centrado y Profesional -->
+  <header class="neuro-gradient-header text-white shadow-xl no-print border-b border-slate-700/50 py-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col items-center justify-center text-center space-y-3">
+        <!-- Ícono y Título Centrado -->
+        <div class="flex items-center justify-center space-x-3">
+          <div class="w-12 h-12 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400 text-2xl shadow-inner">
+            <i class="fas fa-brain"></i>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-black tracking-wider uppercase text-white drop-shadow-sm">
+            VISUALIZADOR DE EEG
+          </h1>
+        </div>
+
+        <!-- Badge de Subtítulo Centrado -->
+        <div class="flex items-center justify-center">
+          <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full font-mono font-medium">
+            Análisis Estadístico Inferencial (Shapiro-Wilk + ANOVA)
+          </span>
+        </div>
+
+        <!-- Badges & Acciones Rápidas Centradas -->
+        <div class="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+          <span id="fileCountBadge" class="bg-slate-800/80 border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg font-medium flex items-center">
+            <i class="fas fa-database text-blue-400 mr-2"></i> 0 / 50 archivos
+          </span>
+          <button id="btnLoadDemo" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-lg font-semibold transition flex items-center shadow-md">
+            <i class="fas fa-magic mr-1.5"></i> Cargar 5 Sujetos Demo
+          </button>
+          <button onclick="document.getElementById('modalHelp').classList.remove('hidden')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center">
+            <i class="fas fa-question-circle mr-1.5"></i> Conceptos Neuro
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner de Definición de Dimensiones Neuromarketing -->
+  <div class="bg-blue-900/90 text-white border-b border-blue-800 py-2.5 px-4 text-xs no-print">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-4">
+        <span class="flex items-center font-semibold text-blue-200">
+          <i class="fas fa-eye text-blue-400 mr-1.5"></i>
+          <strong class="text-white mr-1">ATENCIÓN:</strong> Dimensión de <strong class="text-white ml-1">PERCEPCIÓN</strong>, Enfoque Consciente y Alerta Cognitiva (0-100%).
+        </span>
+        <span class="flex items-center font-semibold text-emerald-200">
+          <i class="fas fa-heart text-emerald-400 mr-1.5"></i>
+          <strong class="text-white mr-1">MEDITACIÓN:</strong> Dimensión de <strong class="text-white ml-1">RECUERDOS, ANCLAS Y EMOCIÓN</strong> (0-100%).
+        </span>
+      </div>
+      <div class="text-[11px] text-blue-200 font-mono">
+        Escalas Normalizadas en Porcentaje (%)
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- SECCIÓN 0: INVESTIGACIÓN CON EQUIPO DE NEUROCIENCIA APLICADA A LAS EMPRESAS -->
+    <section class="neuro-card p-6 border-l-4 border-l-indigo-600 bg-gradient-to-r from-white via-indigo-50/20 to-white">
+      <div class="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-100">
+        <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+          <i class="fas fa-bullseye"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Investigación con equipo de neurociencia aplicada a las empresas</h2>
+          <p class="text-xs text-slate-500">Define el tema y el objetivo del estudio para que el sistema emita la recomendación final del estímulo a utilizar.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div class="md:col-span-5">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+            <i class="fas fa-tag text-indigo-500 mr-1"></i> Tema de Investigación:
+          </label>
+          <input type="text" id="inputResearchTopic" 
+            value="Evaluación Neuromarketing de Estímulos Publicitarios y Diseño de Empaque" 
+            class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+            placeholder="Ej: Evaluación de Spots Publicitarios para Lanzamiento de Marca" />
+        </div>
+
+        <div class="md:col-span-4">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+            <i class="fas fa-compass text-indigo-500 mr-1"></i> Objetivo de Investigación:
+          </label>
+          <input type="text" id="inputResearchObjective" 
+            value="Determinar cuál de los estímulos genera mayor percepción (atención) y anclaje emocional (meditación) para la toma de decisiones del consumidor." 
+            class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+            placeholder="Ej: Determinar qué comercial maximiza la atención y el recuerdo" />
+        </div>
+
+        <div class="md:col-span-3">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+            <i class="fas fa-sliders-h text-indigo-500 mr-1"></i> Criterio de Elección:
+          </label>
+          <select id="selectDecisionCriterion" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <option value="integral" selected>Balance Integral (Percepción + Emoción)</option>
+            <option value="percepcion">Maximizar Percepción (Atención)</option>
+            <option value="emocion">Maximizar Emoción y Recuerdos (Meditación)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- PASO 1: CARGA DE ARCHIVOS CSV (Hasta 50 archivos) -->
+    <section class="neuro-card p-6 border-l-4 border-l-blue-600">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <span class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">1</span>
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Carga Masiva de Archivos CSV de EEG (Hasta 50 Sujetos)</h2>
+            <p class="text-xs text-slate-500">Sube las grabaciones de NeuroSky MindWave (.csv o .txt). Se detectan automáticamente columnas, tiempos y artefactos.</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="btnClearFiles" class="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded transition">
+            <i class="fas fa-trash-alt mr-1"></i> Limpiar Todo
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Zona Dropzone -->
+        <div class="lg:col-span-5">
+          <div id="dropzone" class="dropzone p-8 text-center cursor-pointer flex flex-col items-center justify-center min-h-[170px] hover:border-blue-500 transition" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" multiple accept=".csv,.txt" class="hidden" />
+            <div class="w-13 h-13 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mb-2.5 shadow-inner">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p class="text-sm font-bold text-slate-800">Haz clic o arrastra aquí hasta 50 archivos CSV</p>
+            <p class="text-xs text-slate-500 mt-0.5">Soporta selección múltiple simultánea</p>
+            <span class="mt-2.5 text-[11px] font-semibold text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full">
+              NeuroSky MindWave 1 y 2
+            </span>
+          </div>
+        </div>
+
+        <!-- Lista e Inventario de Archivos -->
+        <div class="lg:col-span-7 flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Archivos de Sujetos Cargados</span>
+            <span id="filesSummaryText" class="text-xs text-slate-500 font-mono">Sin archivos</span>
+          </div>
+          <div id="fileListContainer" class="flex-grow">
+            <div class="text-center py-9 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+              <i class="fas fa-inbox text-3xl mb-1.5 text-slate-300"></i>
+              <p class="text-xs">No hay archivos CSV cargados aún. Arrastra archivos o usa la muestra demo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PASO 2: PROTOCOLO DE HASTA 5 ESTÍMULOS (SIN NEUTRALIZADOR) -->
+    <section id="protocolSection" class="neuro-card p-6 border-l-4 border-l-amber-500 transition-all duration-300">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <span class="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs">2</span>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-lg font-bold text-slate-900">Configuración de Estímulos y Tiempos de Exposición (Hasta 5)</h2>
+              <span id="stimulusCountNotice" class="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                5 / 5 estímulos activos
+              </span>
+            </div>
+            <p class="text-xs text-slate-500">Ingresa el nombre y el tiempo exacto en segundos para cada estímulo para segmentar y dividir los archivos CSV.</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="presetSelect" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:ring-1 focus:ring-amber-500 focus:outline-none">
+            <option value="">⚙️ Plantillas Rápidas...</option>
+            <option value="tv_ab">📺 Test Publicitario TV A/B</option>
+            <option value="packaging">📦 Test de Empaque y Diseño</option>
+            <option value="tasting">☕ Degustación / Sensorial</option>
+          </select>
+          <button id="btnSet5Stimuli" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition border border-slate-300">
+            <i class="fas fa-undo mr-1"></i> 5 Estímulos por Defecto
+          </button>
+          <button id="btnAddStimulus" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center shadow-sm">
+            <i class="fas fa-plus mr-1"></i> Agregar Estímulo (Máx 5)
+          </button>
+        </div>
+      </div>
+
+      <!-- BARRA DE CONFIGURACIÓN RÁPIDA Y PROFESIONAL DEL PROTOCOLO -->
+      <div class="bg-gradient-to-r from-slate-50 via-blue-50/30 to-slate-50 p-3.5 rounded-xl border border-slate-200 mb-4 shadow-2xs">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
+          <!-- Selector de cantidad de estímulos -->
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-bold text-slate-700 flex items-center">
+              <i class="fas fa-layer-group text-blue-600 mr-1.5"></i> Estímulos a Evaluar:
+            </span>
+            <div id="btnGroupNumStimuli" class="inline-flex rounded-lg shadow-2xs bg-white p-0.5 border border-slate-200">
+              <button type="button" onclick="window.neuroApp.setNumStimuli(2)" id="btnNum2" class="px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-slate-900 transition">2 Estímulos</button>
+              <button type="button" onclick="window.neuroApp.setNumStimuli(3)" id="btnNum3" class="px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-slate-900 transition">3 Estímulos</button>
+              <button type="button" onclick="window.neuroApp.setNumStimuli(4)" id="btnNum4" class="px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-slate-900 transition">4 Estímulos</button>
+              <button type="button" onclick="window.neuroApp.setNumStimuli(5)" id="btnNum5" class="px-2.5 py-1 text-xs font-bold rounded bg-blue-600 text-white shadow-xs transition">5 Estímulos (Máx)</button>
+            </div>
+          </div>
+
+          <!-- Asignadores rápidos de tiempos -->
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Duración para todos los estímulos -->
+            <div class="flex items-center space-x-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+              <span class="font-semibold text-slate-700"><i class="fas fa-bullseye text-blue-600 mr-1"></i> Tiempo Estímulos:</span>
+              <input type="number" id="quickStimDuration" value="30" min="1" max="600" class="w-12 text-center font-bold text-blue-700 bg-blue-50/50 rounded border border-blue-200 py-0.5 text-xs focus:ring-1 focus:ring-blue-500" />
+              <span class="text-slate-400 font-bold">s</span>
+              <button type="button" onclick="window.neuroApp.applyDurationToAllStimuli()" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] px-2 py-0.5 rounded font-bold transition ml-1 shadow-2xs" title="Asigna este tiempo a todos los estímulos">
+                ⚡ Aplicar a todos
+              </button>
+            </div>
+
+            <!-- Duración para todos los neutrales -->
+            <div class="flex items-center space-x-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+              <span class="font-semibold text-slate-700"><i class="fas fa-pause-circle text-slate-500 mr-1"></i> Pausa Neutral:</span>
+              <input type="number" id="quickNeutralDuration" value="10" min="0" max="600" class="w-12 text-center font-bold text-slate-800 bg-slate-100 rounded border border-slate-300 py-0.5 text-xs focus:ring-1 focus:ring-slate-400" />
+              <span class="text-slate-400 font-bold">s</span>
+              <button type="button" onclick="window.neuroApp.applyDurationToAllNeutrals()" class="bg-slate-700 hover:bg-slate-800 text-white text-[11px] px-2 py-0.5 rounded font-bold transition ml-1 shadow-2xs" title="Asigna este tiempo a todas las pausas neutrales">
+                ⚡ Aplicar a todos
+              </button>
+            </div>
+
+            <!-- Línea base inicial (Siempre en 0s por defecto) -->
+            <div class="flex items-center space-x-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs" title="Línea base inicial: siempre empieza en 0s (0s = Estímulo 1 inicia de inmediato en el segundo 0)">
+              <span class="font-semibold text-slate-600"><i class="fas fa-hourglass-start text-amber-500 mr-1"></i> Base Inicial:</span>
+              <input type="number" id="quickBaselineDuration" value="0" min="0" max="600" oninput="window.neuroApp.setInitialBaselineDuration(this.value)" class="w-12 text-center font-bold text-slate-700 bg-slate-50 rounded border border-slate-200 py-0.5 text-xs focus:ring-1 focus:ring-amber-500" />
+              <span class="text-slate-400 font-bold">s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-2 pt-2 border-t border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-500">
+          <span><i class="fas fa-info-circle text-blue-500 mr-1"></i> Secuencia Intercalada: <strong>ESTÍMULO 1 ➔ NEUTRAL ➔ ESTIMULO 2 ➔ NEUTRAL ➔ ESTIMULO 3 ...</strong></span>
+          <span class="text-amber-800 font-semibold"><i class="fas fa-shield-alt text-amber-600 mr-1"></i> Los tiempos NEUTRAL se cortan en los CSVs pero <strong>NO se toman en cuenta</strong> en ANOVA ni en las gráficas comparativas.</span>
+        </div>
+      </div>
+
+      <!-- Secuencia de Estímulos y Neutrales Intercalados -->
+      <div id="stimuliCardsContainer" class="space-y-3 mb-5">
+        <!-- Render dinámico en app.js -->
+      </div>
+
+      <!-- Barra Visual de Línea de Tiempo del Protocolo -->
+      <div class="mb-5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <div class="flex items-center justify-between text-xs mb-1.5 font-semibold text-slate-700">
+          <span><i class="fas fa-stream text-amber-500 mr-1.5"></i> Secuencia Continua de los Estímulos:</span>
+          <div id="protocolDurationNotice"></div>
+        </div>
+        <div id="timelineVisual" class="timeline-track">
+          <!-- Segmentos visuales proporcionales -->
+        </div>
+      </div>
+
+      <!-- Opciones y Botón de Aplicar y Dividir -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-slate-100">
+        <label class="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer select-none">
+          <input type="checkbox" id="chkFilterArtifacts" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+          <span class="font-medium">Filtrar automáticamente artefactos de mala señal (Poor Signal > 50)</span>
+        </label>
+
+        <button id="btnProcessProtocol" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-lg transition transform hover:-translate-y-0.5 flex items-center justify-center space-x-2">
+          <i class="fas fa-chart-pie"></i>
+          <span>✓ Aplicar Protocolo, Dividir CSVs y Ejecutar Estadística Inferencial</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- PASO 3: DASHBOARD DE RESULTADOS Y VISUALIZACIONES -->
+    <section id="resultsSection" class="space-y-8 hidden transition-all duration-500">
+
+      <!-- MÓDULO DE DIVISIÓN Y EXPORTACIÓN DE CSVs -->
+      <div class="neuro-card p-5 bg-gradient-to-br from-emerald-50 via-teal-50 to-white border-2 border-emerald-300 shadow-md">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-3 border-b border-emerald-200/60">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow">
+              <i class="fas fa-file-archive"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-black text-emerald-950">
+                División y Exportación de Archivos CSV por Estímulo
+              </h3>
+              <p class="text-xs text-emerald-800">
+                Descarga los archivos CSV de cada sujeto cortados exactamente según los tiempos de cada estímulo.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnExportZip" class="btn-export-zip text-white text-xs px-4 py-2 rounded-xl font-black shadow-md flex items-center space-x-2">
+              <i class="fas fa-file-zipper text-sm"></i>
+              <span>📦 Descargar Todos los CSVs Divididos (.ZIP)</span>
+            </button>
+            <button id="btnExportSelectedStimulusCSV" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs px-3 py-2 rounded-xl font-bold transition flex items-center shadow-xs">
+              <i class="fas fa-file-csv text-emerald-600 mr-1.5 text-sm"></i> CSV Consolidado Estímulo
+            </button>
+            <button id="btnExportExcel" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-3.5 py-2 rounded-xl font-bold transition flex items-center shadow-xs">
+              <i class="fas fa-file-excel mr-1.5 text-sm"></i> Libro Excel (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-xs font-bold text-emerald-900 uppercase tracking-wide block mb-2">
+            <i class="fas fa-table-cells mr-1"></i> Muestras Extraídas por Sujeto y Estímulo:
+          </span>
+          <div class="overflow-x-auto max-h-52 custom-scrollbar bg-white rounded-lg border border-emerald-200 shadow-inner">
+            <table class="w-full text-left text-xs text-slate-700">
+              <thead class="bg-slate-100 text-slate-800 font-bold sticky top-0 border-b border-slate-200 text-[11px]" id="divisionTableHeader">
+                <!-- Encabezados dinámicos -->
+              </thead>
+              <tbody id="tableDivisionBody" class="divide-y divide-slate-100">
+                <!-- Filas dinámicas -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros y Control de Visualización -->
+      <div class="neuro-card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white border border-slate-200">
+        <div class="flex flex-wrap items-center gap-3">
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Visualización de Sujeto:</label>
+            <select id="subjectSelect" class="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none min-w-[260px]">
+              <!-- Opciones dinámicas -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Filtrar Estímulo en Detalle:</label>
+            <select id="stimulusFilterSelect" class="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none min-w-[220px]">
+              <!-- Opciones dinámicas -->
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <button id="btnPrintReport" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3.5 py-2 rounded-lg font-semibold transition flex items-center">
+            <i class="fas fa-print mr-1.5"></i> Imprimir Reporte
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjetas Resumen (KPIs Neuromarketing con Dimensiones) -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="neuro-card p-4 bg-white border-t-4 border-t-blue-600">
+          <span class="text-[11px] font-bold uppercase text-slate-400">Total Sujetos</span>
+          <div id="kpiSubjects" class="text-2xl font-black text-slate-900 mt-1">0</div>
+          <span class="text-[10px] text-slate-500 font-medium">Muestra analizada</span>
+        </div>
+
+        <div class="neuro-card p-4 bg-white border-t-4 border-t-slate-600">
+          <span class="text-[11px] font-bold uppercase text-slate-400">Duración Total</span>
+          <div id="kpiDuration" class="text-2xl font-black text-slate-900 mt-1 font-mono">0s</div>
+          <span class="text-[10px] text-slate-500 font-medium">Protocolo experimental</span>
+        </div>
+
+        <div class="neuro-card p-4 bg-white border-t-4 border-t-blue-500">
+          <span class="text-[11px] font-bold uppercase text-blue-600">Percepción Media</span>
+          <div id="kpiAvgAtt" class="text-2xl font-black text-blue-700 mt-1 font-mono">0.0%</div>
+          <span class="text-[10px] text-slate-500 font-medium">Nivel de Atención (%)</span>
+        </div>
+
+        <div class="neuro-card p-4 bg-white border-t-4 border-t-emerald-500">
+          <span class="text-[11px] font-bold uppercase text-emerald-600">Emoción Media</span>
+          <div id="kpiAvgMed" class="text-2xl font-black text-emerald-700 mt-1 font-mono">0.0%</div>
+          <span class="text-[10px] text-slate-500 font-medium">Recuerdos / Anclas (%)</span>
+        </div>
+
+        <div class="neuro-card p-4 bg-white border-t-4 border-t-amber-500">
+          <span class="text-[11px] font-bold uppercase text-amber-600">Máx Percepción</span>
+          <div id="kpiTopStim" class="text-sm font-black text-slate-900 mt-2 truncate" title="Top estímulo">N/A</div>
+          <span class="text-[10px] text-slate-500 font-medium">Mayor impacto de foco</span>
+        </div>
+
+        <div class="neuro-card p-4 bg-white border-t-4 border-t-indigo-500">
+          <span class="text-[11px] font-bold uppercase text-indigo-600">Calidad de Señal</span>
+          <div id="kpiSignalQual" class="text-base font-black text-slate-900 mt-2">Óptima</div>
+          <span class="text-[10px] text-slate-500 font-medium">Control de ruido EEG</span>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- GRÁFICAS ORGANIZADAS CON PORCENTAJES Y EXPLICACIÓN ESTADÍSTICA -->
+      <!-- ========================================== -->
+
+      <!-- GRÁFICA 1: LÍNEA TEMPORAL COMPLETA -->
+      <div class="neuro-card p-5 bg-white">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">
+              <i class="fas fa-chart-area text-blue-600 mr-2"></i> Gráfica 1: Línea Temporal de la Sesión en Porcentajes (0% a 100%)
+            </h3>
+            <p class="text-xs text-slate-500">Curvas de <strong>Percepción (Atención %)</strong> y <strong>Emoción/Recuerdos (Meditación %)</strong> a lo largo del tiempo.</p>
+          </div>
+          <span class="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-mono font-bold">Interactivo: Zoom & Pan</span>
+        </div>
+        <div id="chartTimeline" class="w-full h-80"></div>
+        
+        <!-- EXPLICACIÓN ESTADÍSTICA GRÁFICA 1 -->
+        <div id="statExplChart1" class="stat-explanation-box">
+          <!-- Render dinámico -->
+        </div>
+      </div>
+
+      <!-- GRÁFICAS 2 y 3: COMPARATIVA ENTRE ESTÍMULOS Y HUELLA ESPECTRAL -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Gráfica de Barras Comparativa Porcentual -->
+        <div class="lg:col-span-6 neuro-card p-5 bg-white flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">
+              <i class="fas fa-chart-bar text-emerald-600 mr-2"></i> Gráfica 2: Comparativa de Medias Porcentuales (%)
+            </h3>
+            <p class="text-xs text-slate-500 mb-3">Contraste de Percepción (Atención %) frente a Emoción/Anclas (Meditación %) con barras de error ($\pm DE$).</p>
+            <div id="chartComparisonBars" class="w-full h-80"></div>
+          </div>
+          <!-- EXPLICACIÓN ESTADÍSTICA GRÁFICA 2 -->
+          <div id="statExplChart2" class="stat-explanation-box">
+            <!-- Render dinámico -->
+          </div>
+        </div>
+
+        <!-- Gráfica de Radar de Ondas Cerebrales (% Potencia Espectral) -->
+        <div class="lg:col-span-6 neuro-card p-5 bg-white flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">
+              <i class="fas fa-circle-notch text-purple-600 mr-2"></i> Gráfica 3: Huella Espectral Neurofisiológica (% Potencia)
+            </h3>
+            <p class="text-xs text-slate-500 mb-3">Distribución espectral relativa de potencia (Delta, Theta, Alpha, Beta, Gamma) sumando 100%.</p>
+            <div id="chartBrainwavesRadar" class="w-full h-80"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRÁFICA 4: COMBINACIÓN DE ESTÍMULOS SEGUNDO A SEGUNDO -->
+      <div class="neuro-card p-5 bg-white">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">
+              <i class="fas fa-wave-square text-amber-600 mr-2"></i> Gráfica 4: Dinámica Fina Segundo a Segundo (Combinación de Estímulos)
+            </h3>
+            <p class="text-xs text-slate-500">Comparativa combinada segundo a segundo de Percepción (%) y Emoción (%) entre todos los estímulos evaluados.</p>
+          </div>
+
+          <!-- Selector de Modo de Comparativa -->
+          <div class="inline-flex rounded-lg shadow-2xs bg-slate-100 p-0.5 border border-slate-200 text-xs font-semibold">
+            <button type="button" onclick="window.neuroApp.setMicrodynamicsViewMode('both')" id="btnMicroBoth" class="px-2.5 py-1 rounded bg-white text-blue-700 font-bold shadow-xs transition">
+              🔄 Percepción + Emoción
+            </button>
+            <button type="button" onclick="window.neuroApp.setMicrodynamicsViewMode('attention')" id="btnMicroAtt" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 transition">
+              🎯 Solo Percepción
+            </button>
+            <button type="button" onclick="window.neuroApp.setMicrodynamicsViewMode('meditation')" id="btnMicroMed" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 transition">
+              💖 Solo Emoción
+            </button>
+            <button type="button" onclick="window.neuroApp.setMicrodynamicsViewMode('sequence')" id="btnMicroSeq" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 transition" title="Secuencia continua de todos los estímulos concatenados">
+              📈 Secuencia Continua
+            </button>
+          </div>
+        </div>
+
+        <div id="chartStimulusDetail" class="w-full h-80"></div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TABLAS DESCRIPTIVAS CIENTÍFICAS -->
+      <!-- ========================================== -->
+      <div class="neuro-card p-6 bg-white">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Tablas Cuantitativas Descriptivas</h3>
+            <p class="text-xs text-slate-500">Métricas consolidadas de Percepción (Atención), Emoción (Meditación) y bandas espectrales.</p>
+          </div>
+
+          <div class="flex flex-wrap border border-slate-200 rounded-lg p-1 bg-slate-50 gap-1">
+            <button onclick="window.switchTab('attMed')" id="tabBtnAttMed" class="px-3 py-1 text-xs font-bold rounded-md bg-white text-blue-700 shadow-sm transition">
+              <i class="fas fa-brain mr-1"></i> Percepción y Emoción
+            </button>
+            <button onclick="window.switchTab('waves')" id="tabBtnWaves" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition">
+              <i class="fas fa-wave-square mr-1"></i> Ondas Cerebrales
+            </button>
+            <button onclick="window.switchTab('matrix')" id="tabBtnMatrix" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition">
+              <i class="fas fa-users mr-1"></i> Matriz Sujeto x Estímulo
+            </button>
+          </div>
+        </div>
+
+        <!-- TABLA 1: PERCEPCIÓN Y EMOCIÓN -->
+        <div id="tabContentAttMed" class="overflow-x-auto custom-scrollbar">
+          <table class="neuromarketing-table">
+            <thead>
+              <tr>
+                <th>Estímulo</th>
+                <th class="text-center">Duración</th>
+                <th class="text-center">Muestras</th>
+                <th class="text-center">Percepción Media (%) ±DE</th>
+                <th class="text-center">Percepción Máx</th>
+                <th class="text-center">Percepción Mín</th>
+                <th class="text-center">Emoción Media (%) ±DE</th>
+                <th class="text-center">Emoción Máx</th>
+                <th class="text-center">Emoción Mín</th>
+                <th class="text-center">Ratio Engagement</th>
+                <th>Diagnóstico Neuro</th>
+              </tr>
+            </thead>
+            <tbody id="tableAttentionBody">
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TABLA 2: ONDAS CEREBRALES -->
+        <div id="tabContentWaves" class="overflow-x-auto custom-scrollbar hidden">
+          <table class="neuromarketing-table">
+            <thead>
+              <tr>
+                <th>Estímulo</th>
+                <th class="text-center">Delta (0.5-2.75Hz)</th>
+                <th class="text-center">Theta (3.5-6.75Hz)</th>
+                <th class="text-center">Alpha Bajo (7.5-9Hz)</th>
+                <th class="text-center">Alpha Alto (10-11Hz)</th>
+                <th class="text-center">Beta Bajo (13-16Hz)</th>
+                <th class="text-center">Beta Alto (17-29Hz)</th>
+                <th class="text-center">Gamma Bajo (31-39Hz)</th>
+                <th class="text-center">Gamma Alto (41-49Hz)</th>
+                <th class="text-center">Theta/Beta (Fatiga)</th>
+                <th class="text-center">Alpha/Beta (Alerta)</th>
+              </tr>
+            </thead>
+            <tbody id="tableBrainwavesBody">
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TABLA 3: MATRIZ POR SUJETO -->
+        <div id="tabContentMatrix" class="overflow-x-auto custom-scrollbar hidden max-h-96">
+          <table class="neuromarketing-table">
+            <thead>
+              <tr>
+                <th>Sujeto / Archivo</th>
+                <th>Estímulo</th>
+                <th class="text-center">Muestras</th>
+                <th class="text-center">Percepción Media (%)</th>
+                <th class="text-center">Percepción Máx</th>
+                <th class="text-center">Emoción Media (%)</th>
+                <th class="text-center">Emoción Máx</th>
+                <th class="text-center">Beta Total</th>
+                <th class="text-center">Alpha Total</th>
+                <th class="text-center">Engagement Ratio</th>
+              </tr>
+            </thead>
+            <tbody id="tableMatrixBody">
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- MÓDULO DE ESTADÍSTICA INFERENCIAL: SHAPIRO-WILK Y ANOVA -->
+      <!-- ========================================== -->
+      <section class="neuro-card p-6 bg-slate-50 border-2 border-indigo-200 shadow-lg space-y-6">
+        <div class="flex items-center justify-between pb-3 border-b border-indigo-100">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-indigo-950">
+                Módulo de Estadística Inferencial y Contraste de Hipótesis
+              </h3>
+              <p class="text-xs text-indigo-800">
+                Validación de supuestos de normalidad (Test de Shapiro-Wilk) y Análisis de Varianza de Medidas Repetidas (ANOVA) con contrastes Post-Hoc.
+              </p>
+            </div>
+          </div>
+          <span class="text-xs font-mono font-bold bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
+            Nivel de Significancia: α = 0.05
+          </span>
+        </div>
+
+        <!-- SUB-BLOQUE 1: PRUEBA DE NORMALIDAD DE SHAPIRO-WILK -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-900 flex items-center">
+              <i class="fas fa-bell text-blue-600 mr-2"></i> 1. Prueba de Normalidad de Shapiro-Wilk (W)
+            </h4>
+            <span class="text-[11px] text-slate-500 font-mono">H0: Distribución Normal (p > 0.05)</span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Normalidad Percepción -->
+            <div class="border border-slate-200 rounded-lg p-3">
+              <h5 class="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center">
+                <i class="fas fa-eye mr-1.5"></i> Percepción (Atención)
+              </h5>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-slate-50 text-[10.5px] uppercase font-bold text-slate-600 border-b">
+                    <tr>
+                      <th class="p-2">Estímulo</th>
+                      <th class="p-2 text-center">N</th>
+                      <th class="p-2 text-center">W</th>
+                      <th class="p-2 text-center">p-valor</th>
+                      <th class="p-2 text-center">Resultado</th>
+                      <th class="p-2">Decisión</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tableShapiroAttBody" class="divide-y divide-slate-100">
+                    <!-- Dinámico -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Normalidad Emoción -->
+            <div class="border border-slate-200 rounded-lg p-3">
+              <h5 class="text-xs font-bold text-emerald-800 uppercase mb-2 flex items-center">
+                <i class="fas fa-heart mr-1.5"></i> Emoción y Recuerdos (Meditación)
+              </h5>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-slate-50 text-[10.5px] uppercase font-bold text-slate-600 border-b">
+                    <tr>
+                      <th class="p-2">Estímulo</th>
+                      <th class="p-2 text-center">N</th>
+                      <th class="p-2 text-center">W</th>
+                      <th class="p-2 text-center">p-valor</th>
+                      <th class="p-2 text-center">Resultado</th>
+                      <th class="p-2">Decisión</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tableShapiroMedBody" class="divide-y divide-slate-100">
+                    <!-- Dinámico -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-BLOQUE 2: ANÁLISIS DE VARIANZA (ANOVA) -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-5">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-900 flex items-center">
+              <i class="fas fa-layer-group text-indigo-600 mr-2"></i> 2. Análisis de Varianza de Medidas Repetidas (ANOVA)
+            </h4>
+            <span class="text-[11px] text-slate-500 font-mono">Contraste entre los estímulos para el grupo N</span>
+          </div>
+
+          <!-- ANOVA PERCEPCIÓN -->
+          <div class="border border-slate-200 rounded-lg p-3.5 bg-slate-50/50">
+            <h5 class="text-xs font-bold text-blue-900 uppercase mb-1.5 flex items-center">
+              <i class="fas fa-eye mr-1.5"></i> Tabla ANOVA: Nivel de Percepción (Atención)
+            </h5>
+            <div class="overflow-x-auto bg-white rounded border border-slate-200">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-100 text-[10.5px] uppercase font-bold text-slate-700 border-b">
+                  <tr>
+                    <th class="p-2">Fuente de Variación</th>
+                    <th class="p-2 text-center">Suma de Cuadrados (SS)</th>
+                    <th class="p-2 text-center">gl</th>
+                    <th class="p-2 text-center">Cuadrado Medio (MS)</th>
+                    <th class="p-2 text-center">Estadístico F</th>
+                    <th class="p-2 text-center">p-valor</th>
+                    <th class="p-2 text-center">Efecto (η²p)</th>
+                  </tr>
+                </thead>
+                <tbody id="tableAnovaAttBody" class="divide-y divide-slate-100">
+                  <!-- Dinámico -->
+                </tbody>
+              </table>
+            </div>
+            <div id="anovaDecisionAttText" class="mt-2 text-xs p-2.5 rounded bg-blue-50/80 border border-blue-200">
+              <!-- Dinámico -->
+            </div>
+          </div>
+
+          <!-- ANOVA EMOCIÓN -->
+          <div class="border border-slate-200 rounded-lg p-3.5 bg-slate-50/50">
+            <h5 class="text-xs font-bold text-emerald-900 uppercase mb-1.5 flex items-center">
+              <i class="fas fa-heart mr-1.5"></i> Tabla ANOVA: Nivel de Emoción y Recuerdos (Meditación)
+            </h5>
+            <div class="overflow-x-auto bg-white rounded border border-slate-200">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-100 text-[10.5px] uppercase font-bold text-slate-700 border-b">
+                  <tr>
+                    <th class="p-2">Fuente de Variación</th>
+                    <th class="p-2 text-center">Suma de Cuadrados (SS)</th>
+                    <th class="p-2 text-center">gl</th>
+                    <th class="p-2 text-center">Cuadrado Medio (MS)</th>
+                    <th class="p-2 text-center">Estadístico F</th>
+                    <th class="p-2 text-center">p-valor</th>
+                    <th class="p-2 text-center">Efecto (η²p)</th>
+                  </tr>
+                </thead>
+                <tbody id="tableAnovaMedBody" class="divide-y divide-slate-100">
+                  <!-- Dinámico -->
+                </tbody>
+              </table>
+            </div>
+            <div id="anovaDecisionMedText" class="mt-2 text-xs p-2.5 rounded bg-emerald-50/80 border border-emerald-200">
+              <!-- Dinámico -->
+            </div>
+          </div>
+
+          <!-- COMPARACIONES POST-HOC TUKEY -->
+          <div class="border border-slate-200 rounded-lg p-3.5">
+            <h5 class="text-xs font-bold text-slate-800 uppercase mb-1.5 flex items-center">
+              <i class="fas fa-project-diagram mr-1.5 text-indigo-500"></i> Comparaciones Múltiples Post-Hoc (Tukey HSD) en Percepción:
+            </h5>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-[10.5px] uppercase font-bold text-slate-600 border-b">
+                  <tr>
+                    <th class="p-2">Contraste entre Estímulos</th>
+                    <th class="p-2 text-center">Diferencia de Medias (Δ)</th>
+                    <th class="p-2 text-center">Error Estándar (SE)</th>
+                    <th class="p-2 text-center">Estadístico q</th>
+                    <th class="p-2 text-center">p-valor ajustado</th>
+                    <th class="p-2 text-center">Significancia Estadística</th>
+                  </tr>
+                </thead>
+                <tbody id="tablePostHocBody" class="divide-y divide-slate-100">
+                  <!-- Dinámico -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- DICTAMEN Y CONCLUSIÓN EJECUTIVA DE INVESTIGACIÓN -->
+        <!-- ========================================== -->
+        <div class="verdict-banner">
+          <div class="flex items-center space-x-2 text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1">
+            <i class="fas fa-award text-base text-amber-400"></i>
+            <span>Dictamen y Conclusión Científica del Laboratorio</span>
+          </div>
+          <div class="text-xs text-slate-300 mb-3">
+            <strong>Objetivo Evaluado:</strong> <span id="verdictObjectiveDisplay" class="italic text-white"></span>
+          </div>
+
+          <div id="verdictRecommendationContent">
+            <!-- Render dinámico con el estímulo que se DEBERÍA UTILIZAR -->
+          </div>
+        </div>
+
+      </section>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-slate-500 text-xs no-print">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+      <div class="flex items-center space-x-2 justify-center md:justify-start">
+        <i class="fas fa-brain text-blue-600"></i>
+        <span class="font-bold text-slate-700">VISUALIZADOR DE EEG</span>
+        <span>• Sistema de Bioseñales con Inferencia Estadística</span>
+      </div>
+      <div>
+        <span>Plataforma experimental de análisis de bioseñales y toma de decisiones.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal de Guía de Métricas -->
+  <div id="modalHelp" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center">
+          <i class="fas fa-book-open text-blue-600 mr-2"></i> Fundamentos de Neuromarketing y Bioseñales EEG
+        </h3>
+        <button onclick="document.getElementById('modalHelp').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+          <i class="fas fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+        <p><strong>1. Las Dos Grandes Dimensiones del Neuromarketing:</strong></p>
+        <ul class="list-disc pl-5 space-y-1.5">
+          <li><strong>PERCEPCIÓN (Nivel de Atención, 0 a 100%):</strong> Mide el grado de enfoque mental activo, captación visual o auditiva, alerta y procesamiento cognitivo directo. Un comercial o empaque con alta atención garantiza que el consumidor no pasó por alto el producto.</li>
+          <li><strong>RECUERDOS, ANCLAS Y EMOCIÓN (Nivel de Meditación, 0 a 100%):</strong> Mide la resonancia emocional, valencia positiva, serenidad receptiva y fijación de anclas en memoria a largo plazo. Un valor óptimo indica que el mensaje genera agrado sin fatiga ni estrés.</li>
+        </ul>
+
+        <p class="pt-2"><strong>2. Bandas Espectrales de Ondas Cerebrales:</strong></p>
+        <ul class="list-disc pl-5 space-y-1">
+          <li><strong>Delta (0.5 - 2.75 Hz):</strong> Procesos autonómicos e inconscientes.</li>
+          <li><strong>Theta (3.5 - 6.75 Hz):</strong> Conexión emocional profunda y memoria episódica.</li>
+          <li><strong>Alpha (7.5 - 11.75 Hz):</strong> Alerta relajada. Desciende ante la percepción consciente (desincronización alfa).</li>
+          <li><strong>Beta (13 - 29.75 Hz):</strong> Procesamiento analítico y alerta activa.</li>
+          <li><strong>Gamma (31 - 49.75 Hz):</strong> Fijación multisensorial y momentos de revelación (insight).</li>
+        </ul>
+
+        <p class="pt-2"><strong>3. Validación Inferencial (Shapiro-Wilk + ANOVA):</strong></p>
+        <p>El test de Shapiro-Wilk verifica si la respuesta de los sujetos sigue una campana gaussiana. Luego, el ANOVA de medidas repetidas certifica matemáticamente si las diferencias observadas entre estímulos son estadísticamente significativas ($p < 0.05$) o atribuibles al azar, respaldando la elección definitiva de la propuesta comercial.</p>
+      </div>
+
+      <div class="pt-3 border-t text-right">
+        <button onclick="document.getElementById('modalHelp').classList.add('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-xl p-5 shadow-2xl flex items-center space-x-3">
+      <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <span id="loadingText" class="text-sm font-bold text-slate-800">Procesando datos EEG...</span>
+    </div>
+  </div>
+
+  <!-- Notificación Toast Flotante -->
+  <div id="globalAlert" style="display: none;"></div>
+
+  <!-- Script de pestaña -->
+  <script>
+    window.switchTab = function(tabName) {
+      const tabs = ['attMed', 'waves', 'matrix'];
+      tabs.forEach(t => {
+        const content = document.getElementById('tabContent' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (t === tabName) {
+          if (content) content.classList.remove('hidden');
+          if (btn) btn.className = "px-3 py-1 text-xs font-bold rounded-md bg-white text-blue-700 shadow-sm transition";
+        } else {
+          if (content) content.classList.add('hidden');
+          if (btn) btn.className = "px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition";
+        }
+      });
+    };
+  </script>
+
+  <!-- Script Principal de la Aplicación -->
+  <script src="app.js?v=2.6"></script>
+</body>
+</html>

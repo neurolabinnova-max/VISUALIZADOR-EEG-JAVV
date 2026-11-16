@@ -1,0 +1,268 @@
+/* ============================================================
+   ESTILOS VISUALIZADOR DE EEG
+   ============================================================ */
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #60a5fa;
+  --secondary: #0f172a;
+  --accent: #06b6d4;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+/* Glassmorphism & Cards */
+.neuro-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.neuro-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}
+
+.neuro-gradient-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
+}
+
+/* Stimulus Card (Conexión Secuencial) */
+.stimulus-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.stimulus-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+/* Neutral Block Connector (Secuencia Inter-Estímulo) */
+.neutral-block-connector {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.15rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.neutral-block-connector:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.timeline-segment-neutral {
+  background: repeating-linear-gradient(
+    45deg,
+    #475569,
+    #475569 8px,
+    #334155 8px,
+    #334155 16px
+  ) !important;
+  color: #e2e8f0 !important;
+  opacity: 0.9;
+  border-left: 1px solid rgba(255,255,255,0.2);
+  border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Timeline Visualization */
+.timeline-track {
+  display: flex;
+  width: 100%;
+  height: 50px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  background: #e2e8f0;
+  position: relative;
+}
+
+.timeline-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  transition: all 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 8px;
+  cursor: pointer;
+  position: relative;
+}
+
+.timeline-segment:hover {
+  filter: brightness(1.15);
+  z-index: 5;
+  transform: translateY(-1px);
+}
+
+.timeline-segment::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,0.4);
+}
+
+/* Drag & Drop Zone */
+.dropzone {
+  border: 2px dashed #93c5fd;
+  background: #eff6ff;
+  border-radius: 1rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.dropzone.dragover {
+  border-color: #2563eb;
+  background: #dbeafe;
+  transform: scale(1.01);
+}
+
+/* Statistical Explanation Callouts */
+.stat-explanation-box {
+  background: #f8fafc;
+  border-left: 4px solid #2563eb;
+  border-radius: 0.5rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.8rem;
+  color: #334155;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+.stat-explanation-box strong {
+  color: #0f172a;
+}
+
+/* Data Tables */
+.neuromarketing-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+}
+
+.neuromarketing-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  padding: 12px 14px;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.neuromarketing-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.neuromarketing-table tr:nth-child(even) td {
+  background-color: #fbfcfd;
+}
+
+.neuromarketing-table tr:hover td {
+  background-color: #f0f7ff;
+}
+
+/* Inferential Section Card */
+.inferential-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px solid #cbd5e1;
+  border-radius: 1rem;
+}
+
+/* Executive Decision Banner */
+.verdict-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #064e3b 100%);
+  color: #ffffff;
+  border-radius: 1rem;
+  padding: 1.75rem;
+  box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.btn-export-zip {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-export-zip:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print optimizations */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .neuro-card, .verdict-banner {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}
